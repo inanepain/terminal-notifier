@@ -117,6 +117,12 @@ isMavericks()
          "       -open URL          The URL of a resource to open when the user clicks the notification.\n" \
          "       -execute COMMAND   A shell command to perform when the user clicks the notification.\n" \
          "\n" \
+		 "   Extra:\n" \
+		 "\n" \
+		 "       -script            Creates a shell script for easy usage.\n" \
+		 "                          The script gets created in your HOME directory.\n" \
+		 "                          But you can move it anywhere, put it in your PATH for real ease.\n" \
+		 "\n" \
          "When the user activates a notification, the results are logged to the system logs.\n" \
          "Use Console.app to view these logs.\n" \
          "\n" \
@@ -125,6 +131,31 @@ isMavericks()
          "\n" \
          "For more information see https://github.com/alloy/terminal-notifier.\n",
          appName, appVersion, appName);
+}
+
+- (void)saveShellScript {
+	NSDictionary *env = [[NSProcessInfo processInfo] environment];
+	if ([env[@"_"] hasSuffix:@"Contents/MacOS/terminal-notifier"]) {
+		NSString *filePath = [NSString stringWithFormat:@"%@/terminal-notifier", env[@"HOME"]];
+		NSString *scriptBody = [NSString stringWithFormat:@"#!/bin/sh\nexec %@/%@ \"$@\"\n", env[@"PWD"],env[@"_"]];
+		
+		NSError *err;
+		if (![scriptBody writeToFile:filePath atomically:NO encoding:NSUTF8StringEncoding error:&err]) {
+			NSLog(@"Error saving script:\n%@", err);
+			exit(0);
+		}
+		
+		NSFileManager *fileManager = [NSFileManager defaultManager];
+		if (![fileManager isExecutableFileAtPath:filePath]){
+			NSMutableDictionary *attributes = [NSMutableDictionary dictionary];
+			long permissions = strtol(@"755".UTF8String, NULL, 8);
+			
+			[attributes setObject:[NSNumber numberWithLong:permissions] forKey:NSFilePosixPermissions];
+			[fileManager setAttributes:attributes ofItemAtPath:filePath error:nil];
+		}
+		
+		printf("terminal-notifier shell script created: %s\n", [filePath UTF8String]);
+	}
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification;
@@ -138,6 +169,11 @@ isMavericks()
       [self printHelpBanner];
       exit(0);
     }
+	  
+	  if ([[[NSProcessInfo processInfo] arguments] indexOfObject:@"-script"] != NSNotFound) {
+		  [self saveShellScript];
+		  exit(0);
+	  }
 
     NSArray *runningProcesses = [[[NSWorkspace sharedWorkspace] runningApplications] valueForKey:@"bundleIdentifier"];
     if ([runningProcesses indexOfObject:NotificationCenterUIBundleID] == NSNotFound) {
