@@ -21,7 +21,6 @@
 		5199791415B1F92B003AFC57 /* terminal-notifier.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "terminal-notifier.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5199791815B1F92B003AFC57 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		5199791B15B1F92B003AFC57 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
-		5199791C15B1F92B003AFC57 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		5199791D15B1F92B003AFC57 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		5199792015B1F92B003AFC57 /* Terminal Notifier-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Terminal Notifier-Info.plist"; sourceTree = "<group>"; };
 		5199792215B1F92B003AFC57 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -79,7 +78,6 @@
 			isa = PBXGroup;
 			children = (
 				5199791B15B1F92B003AFC57 /* AppKit.framework */,
-				5199791C15B1F92B003AFC57 /* CoreData.framework */,
 				5199791D15B1F92B003AFC57 /* Foundation.framework */,
 			);
 			name = "Other Frameworks";
