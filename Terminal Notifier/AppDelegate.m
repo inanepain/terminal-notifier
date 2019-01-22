@@ -2,14 +2,8 @@
 #import <ScriptingBridge/ScriptingBridge.h>
 #import <objc/runtime.h>
 
-NSString * const TerminalNotifierBundleID = @"nl.superalloy.oss.terminal-notifier";
+NSString * const TerminalNotifierBundleID = @"fr.julienxx.oss.terminal-notifier";
 NSString * const NotificationCenterUIBundleID = @"com.apple.notificationcenterui";
-
-// Set OS Params
-#define NSAppKitVersionNumber10_8 1187
-#define NSAppKitVersionNumber10_9 1265
-
-#define contains(str1, str2) ([str1 rangeOfString: str2 ].location != NSNotFound)
 
 NSString *_fakeBundleIdentifier = nil;
 
@@ -40,18 +34,6 @@ InstallFakeBundleIdentifierHook()
   return NO;
 }
 
-static BOOL
-isMavericks()
-{
-  if (floor(NSAppKitVersionNumber) <= NSAppKitVersionNumber10_8) {
-    /* On a 10.8 - 10.8.x system */
-    return NO;
-  } else {
-    /* 10.9 or later system */
-    return YES;
-  }
-}
-
 @implementation NSUserDefaults (SubscriptAndUnescape)
 - (id)objectForKeyedSubscript:(id)key;
 {
@@ -72,14 +54,7 @@ isMavericks()
 
   // initialize the dictionary with default values depending on OS level
   NSDictionary *appDefaults;
-
-  if (isMavericks()) {
-    //10.9
-    appDefaults = @{@"sender": @"com.apple.Terminal"};
-  } else {
-    //10.8
-    appDefaults = @{@"": @"message"};
-  }
+  appDefaults = @{@"sender": @"com.apple.Terminal"};
 
   // and set them appropriately
   [defaults registerDefaults:appDefaults];
@@ -89,13 +64,14 @@ isMavericks()
 {
   const char *appName = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleExecutable"] UTF8String];
   const char *appVersion = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] UTF8String];
-  printf("%s (%s) is a command-line tool to send OS X User Notifications.\n" \
+  printf("%s (%s) is a command-line tool to send macOS User Notifications.\n" \
          "\n" \
          "Usage: %s -[message|list|remove] [VALUE|ID|ID] [options]\n" \
          "\n" \
          "   Either of these is required (unless message data is piped to the tool):\n" \
          "\n" \
          "       -help              Display this help banner.\n" \
+         "       -version           Display terminal-notifier version.\n" \
          "       -message VALUE     The notification message.\n" \
          "       -remove ID         Removes a notification with the specified ‘group’ ID.\n" \
          "       -list ID           If the specified ‘group’ ID exists show when it was delivered,\n" \
@@ -116,20 +92,21 @@ isMavericks()
          "       -contentImage URL  The URL of a image to display attached to the notification (Mavericks+ only)\n" \
          "       -open URL          The URL of a resource to open when the user clicks the notification.\n" \
          "       -execute COMMAND   A shell command to perform when the user clicks the notification.\n" \
-         "\n" \
+		 "\n" \
 		 "   Extra:\n" \
 		 "\n" \
 		 "       -script            Creates a shell script for easy usage.\n" \
 		 "                          The script gets created in your HOME directory.\n" \
 		 "                          But you can move it anywhere, put it in your PATH for real ease.\n" \
-		 "\n" \
+         "       -ignoreDnD         Send notification even if Do Not Disturb is enabled.\n" \
+         "\n" \
          "When the user activates a notification, the results are logged to the system logs.\n" \
          "Use Console.app to view these logs.\n" \
          "\n" \
          "Note that in some circumstances the first character of a message has to be escaped in order to be recognized.\n" \
          "An example of this is when using an open bracket, which has to be escaped like so: ‘\\[’.\n" \
          "\n" \
-         "For more information see https://github.com/alloy/terminal-notifier.\n",
+         "For more information see https://github.com/julienXX/terminal-notifier.\n",
          appName, appVersion, appName);
 }
 
@@ -158,6 +135,14 @@ isMavericks()
 	}
 }
 
+
+- (void)printVersion;
+{
+  const char *appName = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleExecutable"] UTF8String];
+  const char *appVersion = [[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] UTF8String];
+  printf("%s %s.\n", appName, appVersion);
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)notification;
 {
   NSUserNotification *userNotification = notification.userInfo[NSApplicationLaunchUserNotificationKey];
@@ -169,11 +154,11 @@ isMavericks()
       [self printHelpBanner];
       exit(0);
     }
-	  
-	  if ([[[NSProcessInfo processInfo] arguments] indexOfObject:@"-script"] != NSNotFound) {
-		  [self saveShellScript];
-		  exit(0);
-	  }
+
+    if ([[[NSProcessInfo processInfo] arguments] indexOfObject:@"-version"] != NSNotFound) {
+      [self printVersion];
+      exit(0);
+    }
 
     NSArray *runningProcesses = [[[NSWorkspace sharedWorkspace] runningApplications] valueForKey:@"bundleIdentifier"];
     if ([runningProcesses indexOfObject:NotificationCenterUIBundleID] == NSNotFound) {
@@ -218,7 +203,9 @@ isMavericks()
 
     if (remove) {
       [self removeNotificationWithGroupID:remove];
-      if (message == nil) exit(0);
+      if (message == nil || ([message length] == 0)) {
+          exit(0);
+      }
     }
 
     if (message) {
@@ -228,19 +215,19 @@ isMavericks()
       if (defaults[@"execute"])  options[@"command"]          = defaults[@"execute"];
       if (defaults[@"appIcon"])  options[@"appIcon"]          = defaults[@"appIcon"];
       if (defaults[@"contentImage"]) options[@"contentImage"] = defaults[@"contentImage"];
+
       if (defaults[@"open"]) {
-          /*
-           * it may be better to use stringByAddingPercentEncodingWithAllowedCharacters instead of stringByAddingPercentEscapesUsingEncoding,
-           * but stringByAddingPercentEncodingWithAllowedCharacters is only available on OS X 10.9 or higher.
-           */
-          NSString *encodedURL = [defaults[@"open"] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-          NSURL *url = [NSURL URLWithString:defaults[@"open"]];
-          NSString *fragment = [url fragment];
-          if (fragment) {
-              options[@"open"] = [self decodeFragmentInURL:encodedURL fragment:fragment];
-          } else {
-              options[@"open"] = encodedURL;
-          }
+        NSURL *url = [NSURL URLWithString:defaults[@"open"]];
+        if ((url && url.scheme && url.host) || [url isFileURL]) {
+          options[@"open"] = defaults[@"open"];
+        }else{
+          NSLog(@"'%@' is not a valid URI.", defaults[@"open"]);
+          exit(1);
+        }
+      }
+
+      if([[[NSProcessInfo processInfo] arguments] containsObject:@"-ignoreDnD"] == true) {
+        options[@"ignoreDnD"] = @YES;
       }
 
       [self deliverNotificationWithTitle:defaults[@"title"] ?: @"Terminal"
@@ -291,21 +278,20 @@ isMavericks()
   userNotification.informativeText = message;
   userNotification.userInfo = options;
 
-  if(isMavericks()){
-    // Mavericks options
-    if(options[@"appIcon"]){
-      // replacement app icon
-      [userNotification setValue:[self getImageFromURL:options[@"appIcon"]] forKey:@"_identityImage"];
-      [userNotification setValue:@(false) forKey:@"_identityImageHasBorder"];
-    }
-    if(options[@"contentImage"]){
-      // content image
-      userNotification.contentImage = [self getImageFromURL:options[@"contentImage"]];
-    }
+  if(options[@"appIcon"]){
+    [userNotification setValue:[self getImageFromURL:options[@"appIcon"]] forKey:@"_identityImage"];
+    [userNotification setValue:@(false) forKey:@"_identityImageHasBorder"];
+  }
+  if(options[@"contentImage"]){
+    userNotification.contentImage = [self getImageFromURL:options[@"contentImage"]];
   }
 
   if (sound != nil) {
     userNotification.soundName = [sound isEqualToString: @"default"] ? NSUserNotificationDefaultSoundName : sound ;
+  }
+
+  if(options[@"ignoreDnD"]){
+    [userNotification setValue:@YES forKey:@"_ignoresDoNotDisturb"];
   }
 
   NSUserNotificationCenter *center = [NSUserNotificationCenter defaultUserNotificationCenter];

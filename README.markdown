@@ -1,36 +1,38 @@
 # terminal-notifier
 
-terminal-notifier is a command-line tool to send Mac OS X User Notifications,
-which are available in Mac OS X 10.8 and higher.
+[![GitHub release](https://img.shields.io/github/release/julienXX/terminal-notifier.svg)](https://github.com/julienXX/terminal-notifier/releases)
+
+terminal-notifier is a command-line tool to send macOS User Notifications,
+which are available on macOS 10.10 and higher.
+
+
+## News
+
+[alerter](https://github.com/vjeantet/alerter) features were merged in terminal-notifier 1.7. This led to some issues and even more issues in the 1.8 release. We decided with [Valère Jeantet](https://github.com/vjeantet) to rollback this merge.
+
+From now on terminal-notifier won't have the sticky notification feature nor the actions buttons. If you need them please use [alerter](https://github.com/vjeantet/alerter). I also want to follow [semver](http://semver.org) hence this latest version starts at 2.0.0.
+
+Sticking to two smaller specialized tools will hopefully make them easier to maintain and less error prone.
 
 
 ## Caveats
 
-* Under OS X 10.8, the Notification Center _always_ uses the application’s own
-  icon, there’s currently no way to specify a custom icon for a notification. The only
-  way to use this tool with your own icon is to use the `-sender` option or include a
-  build of terminal-notifier with your icon and **a different bundle identifier**
-  instead. (If you do not change the bundle identifier, launch services will use
-  a cached version of the icon.)
-  <br/>Consequently the `-appIcon` & `-contentImage` options aren't doing anything
-  under 10.8.
-  <br/>However, you _can_ use unicode symbols and emojis. See the examples.
-
 * It is currently packaged as an application bundle, because `NSUserNotification`
   does not work from a ‘Foundation tool’. [radar://11956694](radar://11956694)
 
-* If you intend to package terminal-notifier with your app to distribute it on the
-  MAS, please use 1.5.2 since 1.6.0+ uses a private method override which is not
-  allowed in the AppStore guidelines.
+* If you intend to package terminal-notifier with your app to distribute it on the Mac App Store, please use 1.5.2; version 1.6.0+ uses a private method override, which is not allowed in the App Store Guidelines.
 
+* If you're using macOS < 10.10 you should use terminal-notifier 1.6.3.
+
+* If you're looking for sticky notifications or more actions on a notification please use [alerter](https://github.com/vjeantet/alerter)
 
 ## Download
 
 Prebuilt binaries are available from the
-[releases section](https://github.com/alloy/terminal-notifier/releases).
+[releases section](https://github.com/julienXX/terminal-notifier/releases).
 
 Or if you want to use this from
-[Ruby](https://github.com/alloy/terminal-notifier/tree/master/Ruby), you can
+[Ruby](https://github.com/julienXX/terminal-notifier/tree/master/Ruby), you can
 install it through RubyGems:
 
 ```
@@ -60,19 +62,44 @@ $ terminal-notifier -[message|group|list] [VALUE|ID|ID] [options]
 
 This will obviously be a bit slower than using the tool without the wrapper.
 
-Some examples are:
+If you'd like notifications to stay on the screen until dismissed, go to System Preferences -> Notifications -> terminal-notifier and change the style from Banners to Alerts. You cannot do this on a per-notification basis.
 
+
+### Example Uses
+
+Display piped data with a sound:
 ```
 $ echo 'Piped Message Data!' | terminal-notifier -sound default
+```
+
+![Example 1](assets/Example_1.png)
+
+Use a custom icon:
+```
+$ terminal-notifier -title ProjectX -subtitle "new tag detected" -message "Finished" -appIcon http://vjeantet.fr/images/logo.png
+```
+
+![Example 3](assets/Example_3.png)
+
+Open an URL when the notification is clicked:
+```
 $ terminal-notifier -title '💰' -message 'Check your Apple stock!' -open 'http://finance.yahoo.com/q?s=AAPL'
+```
+
+![Example 4](assets/Example_4.png)
+
+Open an app when the notification is clicked:
+```
 $ terminal-notifier -group 'address-book-sync' -title 'Address Book Sync' -subtitle 'Finished' -message 'Imported 42 contacts.' -activate 'com.apple.AddressBook'
 ```
 
+![Example 5](assets/Example_5.png)
 
-#### Options
 
-At a minimum, you have to specify either the `-message` , the `-remove`
-or the `-list` option.
+### Options
+
+At a minimum, you must specify either the `-message` , the `-remove`, or the
+`-list` option.
 
 -------------------------------------------------------------------------------
 
@@ -80,8 +107,8 @@ or the `-list` option.
 
 The message body of the notification.
 
-Note that if this option is omitted and data is piped to the application, that
-data will be used instead.
+If you pipe data into terminal-notifier, you can omit this option,
+and the piped data will become the message body instead.
 
 -------------------------------------------------------------------------------
 
@@ -99,38 +126,42 @@ The subtitle of the notification.
 
 `-sound NAME`
 
-The name of a sound to play when the notification appears. The names are listed
-in Sound Preferences. Use 'default' for the default notification sound.
+Play the `NAME` sound when the notification appears.
+Sound names are listed in Sound Preferences.
+
+Use the special `NAME` “default” for the default notification sound.
 
 -------------------------------------------------------------------------------
 
 `-group ID`
 
-Specifies the ‘group’ a notification belongs to. For any ‘group’ only _one_
+Specifies the notification’s ‘group’. For any ‘group’, only _one_
 notification will ever be shown, replacing previously posted notifications.
 
-A notification can be explicitely removed with the `-remove` option, describe
-below.
+A notification can be explicitly removed with the `-remove` option (see
+below).
 
-Examples are:
+Example group IDs:
 
-* The sender’s name to scope the notifications by tool.
-* The sender’s process ID to scope the notifications by a unique process.
-* The current working directory to scope notifications by project.
+* The sender’s name (to scope the notifications by tool).
+* The sender’s process ID (to scope the notifications by a unique process).
+* The current working directory (to scope notifications by project).
 
 -------------------------------------------------------------------------------
 
 `-remove ID`  **[required]**
 
-Removes a notification that was previously sent with the specified ‘group’ ID,
-if one exists. If used with the special group "ALL", all message are removed.
+Remove a previous notification from the `ID` ‘group’, if one exists.
+
+Use the special `ID` “ALL” to remove all messages.
 
 -------------------------------------------------------------------------------
 
 `-list ID` **[required]**
 
-Lists details about the specified ‘group’ ID. If used with the special group
-"ALL", details about all currently active  messages are displayed.
+Lists details about the specified ‘group’ `ID`.
+
+Use the special `ID` “ALL” to list details about all currently active messages.
 
 The output of this command is tab-separated, which makes it easy to parse.
 
@@ -138,13 +169,13 @@ The output of this command is tab-separated, which makes it easy to parse.
 
 `-activate ID`
 
-Specifies which application should be activated when the user clicks the
+Activate the application specified by `ID` when the user clicks the
 notification.
 
-You can find the bundle identifier of an application in its `Info.plist` file
+You can find the bundle identifier (`CFBundleIdentifier`) of an application in its `Info.plist` file
 _inside_ the application bundle.
 
-Examples are:
+Examples application IDs are:
 
 * `com.apple.Terminal` to activate Terminal.app
 * `com.apple.Safari` to activate Safari.app
@@ -153,8 +184,8 @@ Examples are:
 
 `-sender ID`
 
-Specifying this will make it appear as if the notification was send by that
-application instead, including using its icon.
+Fakes the sender application of the notification. This uses the specified
+application’s icon, and will launch it when the notification is clicked.
 
 Using this option fakes the sender application, so that the notification system
 will launch that application when the notification is clicked. Because of this
@@ -162,21 +193,21 @@ it is important to note that you cannot combine this with options like
 `-execute` and `-activate` which depend on the sender of the notification to be
 ‘terminal-notifier’ to perform its work.
 
-For information on the `ID` see the `-activate` option.
+For information on the `ID`, see the `-activate` option.
 
 -------------------------------------------------------------------------------
 
-`-appIcon PATH` **[10.9+ only]**
+`-appIcon PATH`
 
-Specifies The PATH of an image to display instead of the application icon.
+Specify an image `PATH` to display instead of the application icon.
 
-**WARNING: This option is subject to change since it relies on a private method.**
+**WARNING: This option is subject to change, since it relies on a private method.**
 
 -------------------------------------------------------------------------------
 
-`-contentImage PATH` **[10.9+ only]**
+`-contentImage PATH`
 
-Specifies The PATH of an image to display attached inside the notification.
+Specify an image `PATH` to attach inside of the notification.
 
 **WARNING: This option is subject to change since it relies on a private method.**
 
@@ -184,15 +215,22 @@ Specifies The PATH of an image to display attached inside the notification.
 
 `-open URL`
 
-Specifies a resource to be opened when the user clicks the notification. This
-can be a web or file URL, or any custom URL scheme.
+Open `URL` when the user clicks the notification. This can be a web or file URL,
+or any custom URL scheme.
 
 -------------------------------------------------------------------------------
 
 `-execute COMMAND`
 
-Specifies a shell command to run when the user clicks the notification.
+Run the shell command `COMMAND` when the user clicks the notification.
 
+-------------------------------------------------------------------------------
+
+`-ignoreDnD`
+
+Ignore Do Not Disturb settings and unconditionally show the notification.
+
+**WARNING: This option is subject to change since it relies on a private method.**
 
 ## License
 
@@ -200,7 +238,7 @@ All the works are available under the MIT license. **Except** for
 ‘Terminal.icns’, which is a copy of Apple’s Terminal.app icon and as such is
 copyright of Apple.
 
-Copyright (C) 2012-2015 Eloy Durán <eloy.de.enige@gmail.com>, Julien Blanchard
+Copyright (C) 2012-2017 Eloy Durán <eloy.de.enige@gmail.com>, Julien Blanchard
 <julien@sideburns.eu>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
